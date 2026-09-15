@@ -8,6 +8,7 @@ import {
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 
 // ---------- design tokens ----------
+
 const T = {
   ink: "#0E241C",        // deep green-navy ink, headings/sidebar
   inkSoft: "#4A6373",
