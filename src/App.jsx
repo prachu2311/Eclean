@@ -2,25 +2,26 @@ import React, { useState, useMemo } from "react";
 import {
   Recycle, Truck, Coins, LayoutDashboard, CheckCircle2, Camera, MapPin,
   Calendar, Package, TrendingUp, Users, ClipboardList, LogOut, Droplets,
-  Leaf, ArrowRight, Plus, Gift, Scale, ChevronRight, Clock, ShieldCheck
+  Leaf, ArrowRight, Plus, Gift, Scale, ChevronRight, Clock, ShieldCheck,
+  Phone, KeyRound, Menu, X, ArrowLeft
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 
 // ---------- design tokens ----------
 const T = {
-  ink: "#16261E",       // near-black forest ink, headings/sidebar
-  inkSoft: "#3C4A41",
-  paper: "#EEF0E3",     // pale sage paper background
-  paperRaised: "#F7F8EF",
-  leaf: "#4B7A3E",       // primary brand green
-  leafDeep: "#365C2C",
-  wet: "#2F6E72",        // wet waste teal
-  wetSoft: "#DCEAEA",
-  dry: "#8C6A34",        // dry waste ochre/cardboard
-  drySoft: "#EDE3CB",
-  coin: "#C77D2E",       // green-coin ochre
-  coinSoft: "#F3E1C8",
-  line: "#D8D9C8",
+  ink: "#0E241C",        // deep green-navy ink, headings/sidebar
+  inkSoft: "#4A6373",
+  paper: "#F5F9FB",      // near-white, faint blue-green tint
+  paperRaised: "#FFFFFF",
+  leaf: "#1E8A5A",        // primary brand green
+  leafDeep: "#0E4B33",
+  wet: "#1565A8",         // wet waste — blue
+  wetSoft: "#DCEAF6",
+  dry: "#1F7A4D",         // dry waste — secondary green
+  drySoft: "#DCF0E3",
+  coin: "#0E6FB0",        // Green Coins accent — blue
+  coinSoft: "#DCEAF6",
+  line: "#DCE6E2",
   danger: "#A6402F",
 };
 
@@ -58,13 +59,13 @@ const redeemables = [
 const wasteMeta = {
   wet: { label: "Wet waste", color: T.wet, soft: T.wetSoft, rate: 2, desc: "Kitchen scraps, peels, leftovers" },
   dry: { label: "Dry waste", color: T.dry, soft: T.drySoft, rate: 4, desc: "Paper, plastic, metal, glass" },
-  mixed: { label: "Mixed", color: T.inkSoft, soft: "#E4E3D6", rate: 3, desc: "Not yet segregated" },
+  mixed: { label: "Mixed", color: T.inkSoft, soft: "#E6EEF2", rate: 3, desc: "Not yet segregated" },
 };
 
 const statusColor = {
-  Requested: { bg: "#F3E1C8", fg: T.coin },
+  Requested: { bg: "#DCEAF6", fg: T.coin },
   Accepted: { bg: T.wetSoft, fg: T.wet },
-  Collected: { bg: "#DCEBDC", fg: T.leafDeep },
+  Collected: { bg: "#DCF0E3", fg: T.leafDeep },
 };
 
 function uid(prefix) {
@@ -104,27 +105,124 @@ function WasteTag({ type }) {
   );
 }
 
+// ---------- Phone auth (login / signup) ----------
+function PhoneAuth({ onVerified }) {
+  const [step, setStep] = useState("phone"); // phone | otp
+  const [phone, setPhone] = useState("");
+  const [otp, setOtp] = useState("");
+  const [error, setError] = useState("");
+  const [sending, setSending] = useState(false);
+  const DEMO_OTP = "1234";
+
+  const phoneValid = /^[6-9]\d{9}$/.test(phone);
+
+  const sendOtp = () => {
+    if (!phoneValid) { setError("Enter a valid 10-digit mobile number"); return; }
+    setError(""); setSending(true);
+    // simulated network delay — in production this triggers an SMS OTP via a backend
+    setTimeout(() => { setSending(false); setStep("otp"); }, 700);
+  };
+
+  const verifyOtp = () => {
+    if (otp !== DEMO_OTP) { setError("Incorrect OTP. Try 1234 for this preview."); return; }
+    setError(""); onVerified(phone);
+  };
+
+  return (
+    <div style={{ background: T.ink, minHeight: "100vh" }} className="flex items-center justify-center p-5">
+      <div className="w-full max-w-sm p-7 flex flex-col gap-5" style={{ background: T.paper, border: `1px solid ${T.leafDeep}` }}>
+        <div className="flex items-center gap-2">
+          <Recycle size={20} color={T.leafDeep} />
+          <span style={{ color: T.ink, fontFamily: "Fraunces, serif", fontSize: "1.15rem" }}>ECLEAN</span>
+        </div>
+
+        {step === "phone" && (
+          <>
+            <div>
+              <p style={{ fontFamily: "Fraunces, serif", fontSize: "1.4rem", color: T.ink }}>Log in or sign up</p>
+              <p className="text-sm mt-1" style={{ color: T.inkSoft }}>We'll text you a one-time code — no password needed.</p>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-semibold" style={{ color: T.ink }}>Mobile number</label>
+              <div className="flex items-center gap-2 px-3 py-2.5" style={{ background: T.paperRaised, border: `1px solid ${T.line}` }}>
+                <Phone size={15} color={T.inkSoft} />
+                <span className="text-sm" style={{ color: T.inkSoft }}>+91</span>
+                <input
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                  inputMode="numeric"
+                  placeholder="98765 43210"
+                  className="w-full text-sm bg-transparent outline-none"
+                  style={{ color: T.ink }}
+                />
+              </div>
+            </div>
+            {error && <p className="text-xs" style={{ color: T.danger }}>{error}</p>}
+            <button onClick={sendOtp} disabled={sending}
+              className="px-5 py-2.5 text-sm font-semibold flex items-center justify-center gap-2"
+              style={{ background: T.leaf, color: T.paper, opacity: sending ? 0.7 : 1 }}>
+              {sending ? "Sending code…" : "Send OTP"} {!sending && <ArrowRight size={14} />}
+            </button>
+            <p className="text-xs" style={{ color: T.inkSoft }}>By continuing you agree to ECLEAN's Terms & Privacy Policy.</p>
+          </>
+        )}
+
+        {step === "otp" && (
+          <>
+            <button onClick={() => { setStep("phone"); setError(""); }} className="flex items-center gap-1 text-xs -mb-2" style={{ color: T.inkSoft }}>
+              <ArrowLeft size={13} /> Change number
+            </button>
+            <div>
+              <p style={{ fontFamily: "Fraunces, serif", fontSize: "1.4rem", color: T.ink }}>Enter the code</p>
+              <p className="text-sm mt-1" style={{ color: T.inkSoft }}>Sent to +91 {phone}. For this preview, use <strong>1234</strong>.</p>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-semibold" style={{ color: T.ink }}>4-digit OTP</label>
+              <div className="flex items-center gap-2 px-3 py-2.5" style={{ background: T.paperRaised, border: `1px solid ${T.line}` }}>
+                <KeyRound size={15} color={T.inkSoft} />
+                <input
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                  inputMode="numeric"
+                  placeholder="••••"
+                  className="w-full text-sm bg-transparent outline-none tracking-widest"
+                  style={{ color: T.ink }}
+                />
+              </div>
+            </div>
+            {error && <p className="text-xs" style={{ color: T.danger }}>{error}</p>}
+            <button onClick={verifyOtp} className="px-5 py-2.5 text-sm font-semibold flex items-center justify-center gap-2" style={{ background: T.leaf, color: T.paper }}>
+              Verify & continue <ArrowRight size={14} />
+            </button>
+            <button onClick={sendOtp} className="text-xs font-semibold self-center" style={{ color: T.leafDeep }}>Resend code</button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ---------- Role gate (landing) ----------
 function RoleGate({ onEnter }) {
   return (
-    <div style={{ background: T.ink, minHeight: "100vh" }} className="flex items-center justify-center p-6">
+    <div style={{ background: T.ink, minHeight: "100vh" }} className="flex items-center justify-center p-4 md:p-6">
       <div className="w-full max-w-5xl grid md:grid-cols-2 overflow-hidden" style={{ border: `1px solid ${T.leafDeep}` }}>
-        <div className="p-10 flex flex-col justify-between" style={{ background: T.leafDeep }}>
+        <div className="p-6 md:p-10 flex flex-col justify-between gap-8" style={{ background: T.leafDeep }}>
           <div className="flex items-center gap-2" style={{ color: T.paper }}>
             <Recycle size={22} />
             <span className="text-sm tracking-wide">ECLEAN</span>
           </div>
           <div>
-            <h1 style={{ fontFamily: "Fraunces, serif", color: T.paper, fontSize: "2.6rem", lineHeight: 1.08 }}>
+            <h1 style={{ fontFamily: "Fraunces, serif", color: T.paper, fontSize: "clamp(1.8rem, 5vw, 2.6rem)", lineHeight: 1.1 }}>
               Doorstep waste,<br />turned into a resource.
             </h1>
-            <p className="mt-4 text-sm" style={{ color: "#C9D6C0", maxWidth: "34ch" }}>
+            <p className="mt-4 text-sm" style={{ color: "#C9DBD2", maxWidth: "34ch" }}>
               Book a segregated pickup, track what it becomes, and earn Green Coins for doing it right — a working preview of the ECLEAN MVP.
             </p>
           </div>
           <CycleDiagram />
         </div>
-        <div className="p-10 flex flex-col justify-center gap-3" style={{ background: T.paper }}>
+        <div className="p-6 md:p-10 flex flex-col justify-center gap-3" style={{ background: T.paper }}>
           <p className="text-xs font-semibold tracking-wide mb-1" style={{ color: T.inkSoft }}>PREVIEW AS</p>
           <RoleButton icon={Leaf} title="Household" desc="Book pickups, track Green Coins" onClick={() => onEnter("household")} />
           <RoleButton icon={Truck} title="Collector" desc="Accept jobs, record weights" onClick={() => onEnter("collector")} />
@@ -159,8 +257,8 @@ function CycleDiagram() {
     <div className="flex items-center gap-1 mt-8">
       {stops.map((s, i) => (
         <React.Fragment key={s}>
-          <span className="text-xs px-2 py-1" style={{ color: "#C9D6C0", border: "1px solid #4A6B40" }}>{s}</span>
-          {i < stops.length - 1 && <ArrowRight size={12} color="#7FA26E" />}
+          <span className="text-xs px-2 py-1" style={{ color: "#C9DBD2", border: "1px solid #2E6B57" }}>{s}</span>
+          {i < stops.length - 1 && <ArrowRight size={12} color="#5FAE86" />}
         </React.Fragment>
       ))}
     </div>
@@ -188,20 +286,20 @@ function Sidebar({ role, view, setView, onExit, coins }) {
   };
   const roleLabel = { household: "Household · Nandini R.", collector: "Collector · Farooq S.", admin: "Admin console" };
   return (
-    <div className="w-60 shrink-0 flex flex-col justify-between" style={{ background: T.leafDeep, minHeight: "100vh" }}>
+    <div className="hidden md:flex w-60 shrink-0 flex-col justify-between" style={{ background: T.leafDeep, minHeight: "100vh" }}>
       <div>
-        <div className="p-5 flex items-center gap-2" style={{ borderBottom: "1px solid #2E4C27" }}>
+        <div className="p-5 flex items-center gap-2" style={{ borderBottom: "1px solid #123A2E" }}>
           <Recycle size={20} color={T.paper} />
           <span style={{ color: T.paper, fontFamily: "Fraunces, serif", fontSize: "1.1rem" }}>ECLEAN</span>
         </div>
-        <div className="px-5 pt-4 pb-2 text-xs" style={{ color: "#A9C29B" }}>{roleLabel[role]}</div>
+        <div className="px-5 pt-4 pb-2 text-xs" style={{ color: "#9FC2C9" }}>{roleLabel[role]}</div>
         <nav className="mt-1 flex flex-col">
           {items[role].map((it) => {
             const active = view === it.id;
             return (
               <button key={it.id} onClick={() => setView(it.id)}
                 className="flex items-center gap-3 px-5 py-3 text-sm text-left transition-colors"
-                style={{ background: active ? "#2E4C27" : "transparent", color: active ? T.paper : "#B9CDAF", borderLeft: active ? `3px solid ${T.paper}` : "3px solid transparent" }}>
+                style={{ background: active ? "#123A2E" : "transparent", color: active ? T.paper : "#9CC2B8", borderLeft: active ? `3px solid ${T.paper}` : "3px solid transparent" }}>
                 <it.icon size={16} />
                 {it.label}
               </button>
@@ -209,16 +307,75 @@ function Sidebar({ role, view, setView, onExit, coins }) {
           })}
         </nav>
       </div>
-      <div className="p-5" style={{ borderTop: "1px solid #2E4C27" }}>
+      <div className="p-5" style={{ borderTop: "1px solid #123A2E" }}>
         {role === "household" && (
           <div className="mb-4 flex items-center gap-2 text-sm" style={{ color: T.paper }}>
-            <Coins size={15} color="#E8B368" /> {coins} Green Coins
+            <Coins size={15} color="#6EC1F0" /> {coins} Green Coins
           </div>
         )}
-        <button onClick={onExit} className="flex items-center gap-2 text-xs" style={{ color: "#A9C29B" }}>
+        <button onClick={onExit} className="flex items-center gap-2 text-xs" style={{ color: "#9FC2C9" }}>
           <LogOut size={13} /> Switch role
         </button>
       </div>
+    </div>
+  );
+}
+
+const navItems = {
+  household: [
+    { id: "dashboard", label: "Overview", icon: LayoutDashboard },
+    { id: "book", label: "Book", icon: Plus },
+    { id: "history", label: "History", icon: ClipboardList },
+    { id: "rewards", label: "Coins", icon: Coins },
+  ],
+  collector: [
+    { id: "available", label: "Available", icon: Package },
+    { id: "myjobs", label: "My jobs", icon: Truck },
+  ],
+  admin: [
+    { id: "dashboard", label: "Overview", icon: LayoutDashboard },
+    { id: "requests", label: "Requests", icon: ClipboardList },
+    { id: "collectors", label: "Collectors", icon: Users },
+  ],
+};
+
+// mobile top bar — replaces the sidebar header below the md breakpoint
+function MobileTopBar({ role, coins, onExit }) {
+  const roleLabel = { household: "Nandini R.", collector: "Farooq S.", admin: "Admin console" };
+  return (
+    <div className="md:hidden flex items-center justify-between px-4 py-3 sticky top-0 z-10" style={{ background: T.leafDeep }}>
+      <div className="flex items-center gap-2">
+        <Recycle size={18} color={T.paper} />
+        <span style={{ color: T.paper, fontFamily: "Fraunces, serif", fontSize: "1rem" }}>ECLEAN</span>
+        <span className="text-xs ml-1" style={{ color: "#9FC2C9" }}>· {roleLabel[role]}</span>
+      </div>
+      <div className="flex items-center gap-3">
+        {role === "household" && (
+          <span className="flex items-center gap-1 text-xs" style={{ color: T.paper }}>
+            <Coins size={13} color="#6EC1F0" /> {coins}
+          </span>
+        )}
+        <button onClick={onExit} aria-label="Switch role"><LogOut size={15} color="#9FC2C9" /></button>
+      </div>
+    </div>
+  );
+}
+
+// mobile bottom tab bar — replaces the sidebar nav below the md breakpoint
+function MobileBottomNav({ role, view, setView }) {
+  return (
+    <div className="md:hidden fixed bottom-0 left-0 right-0 flex z-10" style={{ background: T.leafDeep, borderTop: "1px solid #123A2E" }}>
+      {navItems[role].map((it) => {
+        const active = view === it.id;
+        return (
+          <button key={it.id} onClick={() => setView(it.id)}
+            className="flex-1 flex flex-col items-center gap-1 py-2.5"
+            style={{ color: active ? T.paper : "#7FB0A8", fontSize: "11px" }}>
+            <it.icon size={17} />
+            {it.label}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -234,17 +391,17 @@ function HouseholdDashboard({ pickups, coins, setView }) {
         <h2 style={{ fontFamily: "Fraunces, serif", fontSize: "1.7rem", color: T.ink }}>Good to see you, Nandini</h2>
         <p className="text-sm" style={{ color: T.inkSoft }}>Here's your impact so far, and what's coming up.</p>
       </div>
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard icon={Scale} label="Waste diverted" value={`${kg.toFixed(1)} kg`} sub="from landfill, lifetime" />
         <StatCard icon={CheckCircle2} label="Pickups completed" value={collected} sub={`${mine.length} total requested`} />
         <StatCard icon={Coins} label="Green Coins" value={coins} accent={T.coin} sub="≈ redeemable now" />
       </div>
-      <div className="flex items-center justify-between p-5" style={{ background: T.leafDeep }}>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5" style={{ background: T.leafDeep }}>
         <div>
           <p style={{ color: T.paper, fontFamily: "Fraunces, serif", fontSize: "1.2rem" }}>Ready for your next pickup?</p>
-          <p className="text-xs mt-1" style={{ color: "#C9D6C0" }}>Segregate wet and dry waste before booking for the best rate.</p>
+          <p className="text-xs mt-1" style={{ color: "#C9DBD2" }}>Segregate wet and dry waste before booking for the best rate.</p>
         </div>
-        <button onClick={() => setView("book")} className="px-4 py-2 text-sm font-semibold flex items-center gap-2" style={{ background: T.paper, color: T.leafDeep }}>
+        <button onClick={() => setView("book")} className="self-start sm:self-auto px-4 py-2 text-sm font-semibold flex items-center gap-2" style={{ background: T.paper, color: T.leafDeep }}>
           Book pickup <ArrowRight size={14} />
         </button>
       </div>
@@ -285,7 +442,7 @@ function BookPickup({ addPickup }) {
   if (confirmed) {
     return (
       <div className="max-w-md flex flex-col items-start gap-4 p-8" style={{ background: T.paperRaised, border: `1px solid ${T.line}` }}>
-        <div className="w-12 h-12 flex items-center justify-center" style={{ background: "#DCEBDC" }}>
+        <div className="w-12 h-12 flex items-center justify-center" style={{ background: "#DCF0E3" }}>
           <CheckCircle2 color={T.leafDeep} size={22} />
         </div>
         <div>
@@ -302,7 +459,7 @@ function BookPickup({ addPickup }) {
       <h2 style={{ fontFamily: "Fraunces, serif", fontSize: "1.7rem", color: T.ink }}>Book a doorstep pickup</h2>
       <div>
         <p className="text-sm font-semibold mb-2" style={{ color: T.ink }}>What are you handing over?</p>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {Object.entries(wasteMeta).map(([key, m]) => (
             <button key={key} onClick={() => setWaste(key)} className="p-4 text-left flex flex-col gap-2"
               style={{ background: waste === key ? m.soft : T.paperRaised, border: `1.5px solid ${waste === key ? m.color : T.line}` }}>
@@ -320,7 +477,7 @@ function BookPickup({ addPickup }) {
           <input value={address} onChange={(e) => setAddress(e.target.value)} className="w-full text-sm bg-transparent outline-none" style={{ color: T.ink }} />
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="flex flex-col gap-1">
           <label className="text-sm font-semibold" style={{ color: T.ink }}>Date</label>
           <div className="flex items-center gap-2 px-3 py-2" style={{ background: T.paperRaised, border: `1px solid ${T.line}` }}>
@@ -380,7 +537,7 @@ function HouseholdRewards({ coins, redeem, log }) {
       </div>
       <div>
         <p className="text-sm font-semibold mb-2" style={{ color: T.ink }}>Redeem</p>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {redeemables.map((r) => {
             const can = coins >= r.cost;
             return (
@@ -475,7 +632,7 @@ function CollectorMyJobs({ pickups, complete }) {
               </button>
             </div>
             {openId === p.id && (
-              <div className="p-4 grid grid-cols-2 gap-4" style={{ borderTop: `1px solid ${T.line}` }}>
+              <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-4" style={{ borderTop: `1px solid ${T.line}` }}>
                 <div className="flex flex-col gap-1">
                   <label className="text-sm font-semibold flex items-center gap-1" style={{ color: T.ink }}><Scale size={13} /> Weight collected (kg)</label>
                   <input value={weight} onChange={(e) => setWeight(e.target.value)} type="number" step="0.1" placeholder="e.g. 2.4"
@@ -512,14 +669,14 @@ function AdminDashboard({ pickups }) {
   return (
     <div className="flex flex-col gap-6">
       <h2 style={{ fontFamily: "Fraunces, serif", fontSize: "1.7rem", color: T.ink }}>Operations overview</h2>
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard icon={Users} label="Active households" value={households} />
         <StatCard icon={ClipboardList} label="Pickups (all time)" value={total} sub={`${collected} collected`} />
         <StatCard icon={Scale} label="Waste collected" value={`${kg.toFixed(1)} kg`} />
         <StatCard icon={TrendingUp} label="Completion rate" value={`${Math.round((collected / total) * 100)}%`} accent={T.leaf} />
       </div>
-      <div className="grid grid-cols-3 gap-4">
-        <div className="col-span-2 p-5" style={{ background: T.paperRaised, border: `1px solid ${T.line}` }}>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-2 p-5" style={{ background: T.paperRaised, border: `1px solid ${T.line}` }}>
           <p className="text-sm font-semibold mb-3" style={{ color: T.ink }}>Waste collected this week (kg)</p>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={trend}>
@@ -563,20 +720,22 @@ function AdminRequests({ pickups }) {
           </button>
         ))}
       </div>
-      <div style={{ border: `1px solid ${T.line}` }}>
-        <div className="grid grid-cols-6 px-4 py-2 text-xs font-semibold" style={{ background: T.paper, color: T.inkSoft, borderBottom: `1px solid ${T.line}` }}>
-          <span>ID</span><span>Household</span><span>Type</span><span>Collector</span><span>Weight</span><span>Status</span>
-        </div>
-        {rows.map((p) => (
-          <div key={p.id} className="grid grid-cols-6 px-4 py-3 text-sm items-center" style={{ borderBottom: `1px solid ${T.line}`, background: T.paperRaised, color: T.ink }}>
-            <span>{p.id}</span>
-            <span>{p.household}</span>
-            <span><WasteTag type={p.waste} /></span>
-            <span style={{ color: T.inkSoft }}>{p.collector || "—"}</span>
-            <span style={{ color: T.inkSoft }}>{p.weight ? `${p.weight} kg` : "—"}</span>
-            <span><Badge status={p.status} /></span>
+      <div className="overflow-x-auto" style={{ border: `1px solid ${T.line}` }}>
+        <div style={{ minWidth: "640px" }}>
+          <div className="grid grid-cols-6 px-4 py-2 text-xs font-semibold" style={{ background: T.paper, color: T.inkSoft, borderBottom: `1px solid ${T.line}` }}>
+            <span>ID</span><span>Household</span><span>Type</span><span>Collector</span><span>Weight</span><span>Status</span>
           </div>
-        ))}
+          {rows.map((p) => (
+            <div key={p.id} className="grid grid-cols-6 px-4 py-3 text-sm items-center" style={{ borderBottom: `1px solid ${T.line}`, background: T.paperRaised, color: T.ink }}>
+              <span>{p.id}</span>
+              <span>{p.household}</span>
+              <span><WasteTag type={p.waste} /></span>
+              <span style={{ color: T.inkSoft }}>{p.collector || "—"}</span>
+              <span style={{ color: T.inkSoft }}>{p.weight ? `${p.weight} kg` : "—"}</span>
+              <span><Badge status={p.status} /></span>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -588,7 +747,7 @@ function AdminCollectors({ pickups }) {
   return (
     <div className="flex flex-col gap-4">
       <h2 style={{ fontFamily: "Fraunces, serif", fontSize: "1.7rem", color: T.ink }}>Collectors</h2>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {collectors.map((c) => {
           const jobs = pickups.filter((p) => p.collector === c);
           const done = jobs.filter((p) => p.status === "Collected").length;
@@ -612,6 +771,7 @@ function AdminCollectors({ pickups }) {
 
 // ---------- App root ----------
 export default function App() {
+  const [phone, setPhone] = useState(null); // null until OTP verified
   const [role, setRole] = useState(null);
   const [view, setView] = useState("dashboard");
   const [pickups, setPickups] = useState(seedPickups);
@@ -636,6 +796,13 @@ export default function App() {
   };
   const redeem = (r) => { setCoins((c) => c - r.cost); setRedeemLog((l) => [r, ...l]); };
 
+  if (!phone) return (
+    <>
+      <style>{fontImport}</style>
+      <PhoneAuth onVerified={(p) => setPhone(p)} />
+    </>
+  );
+
   if (!role) return (
     <>
       <style>{fontImport}</style>
@@ -646,9 +813,10 @@ export default function App() {
   return (
     <div style={{ fontFamily: "Inter, sans-serif", background: T.paper, minHeight: "100vh" }}>
       <style>{fontImport}</style>
-      <div className="flex">
+      <div className="flex flex-col md:flex-row">
         <Sidebar role={role} view={view} setView={setView} onExit={exit} coins={coins} />
-        <div className="flex-1 p-8">
+        <MobileTopBar role={role} coins={coins} onExit={exit} />
+        <div className="flex-1 p-4 pb-24 md:p-8 md:pb-8">
           {role === "household" && view === "dashboard" && <HouseholdDashboard pickups={pickups} coins={coins} setView={setView} />}
           {role === "household" && view === "book" && <BookPickup addPickup={addPickup} />}
           {role === "household" && view === "history" && <HouseholdHistory pickups={pickups} />}
@@ -661,6 +829,7 @@ export default function App() {
           {role === "admin" && view === "requests" && <AdminRequests pickups={pickups} />}
           {role === "admin" && view === "collectors" && <AdminCollectors pickups={pickups} />}
         </div>
+        <MobileBottomNav role={role} view={view} setView={setView} />
       </div>
     </div>
   );
